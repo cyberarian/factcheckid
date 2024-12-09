@@ -202,7 +202,7 @@ def main():
     </style>
     """, unsafe_allow_html=True)
 
-    st.title("Indonesian Fact Checker 🕵️‍♀️")
+    st.title("FactChecker_ID 🕵️‍♀️")
 
     # Input and Analysis Columns
     col1, col2 = st.columns(2)
