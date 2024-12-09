@@ -186,6 +186,19 @@ def main():
     .status-accurate { color: green; font-weight: bold; }
     .status-inaccurate { color: red; font-weight: bold; }
     .status-subjective { color: orange; font-weight: bold; }
+    .fact-check-button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+    }
+    .fact-check-button:hover {
+        background-color: #45a049;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -200,17 +213,23 @@ def main():
         word_count = len(input_text.split())
         st.text(f"Word Count: {word_count}/40,000")
 
+        # Fact Check Button
+        fact_check_clicked = st.button("🔍 Check Facts", key="fact_check_button", 
+                                       help="Click to verify the claims in the text",
+                                       type="primary")
+
     with col2:
         st.subheader("Fact Check Results")
         
-        if input_text:
+        # Only process when the Fact Check button is clicked
+        if fact_check_clicked and input_text:
             # Validate input length
             if word_count > 40000:
                 st.error("Text exceeds 40,000 word limit. Please shorten your text.")
-                return
+                st.stop()
 
             # Fact Checking Process
-            with st.spinner("Analyzing text..."):
+            with st.spinner("Analyzing text... This may take a moment"):
                 # Extract keywords
                 keywords = extract_keywords(input_text)
                 st.sidebar.write("Extracted Keywords:", keywords)
@@ -220,7 +239,7 @@ def main():
                 
                 if not wiki_content:
                     st.warning("Could not find a relevant Wikipedia page.")
-                    return
+                    st.stop()
 
                 # Extract claims
                 claims_data = extract_claims(input_text)
@@ -271,8 +290,12 @@ def main():
                 
                 else:
                     st.warning("No verifiable claims found in the text.")
+        elif fact_check_clicked and not input_text:
+            st.warning("Please enter some text to fact-check.")
         else:
-            st.info("Enter text in the input box to start fact-checking.")
-
+            st.info("Enter text and click 'Check Facts' to start fact-checking.")
+# Footer
+    st.markdown("---")
+    st.markdown("Built with :orange_heart: thanks to Claude.ai, Groq, Github, Streamlit. :scroll: support my works at https://saweria.co/adnuri", help="cyberariani@gmail.com")
 if __name__ == "__main__":
     main()
