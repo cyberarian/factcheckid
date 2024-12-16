@@ -2,3 +2,7 @@ streamlit
 groq
 python-dotenv
 wikipedia
+markdown
+spacy
+requests
+tenacity
