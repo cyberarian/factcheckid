@@ -6,6 +6,8 @@ import json
 from typing import List, Dict
 import re
 from html import escape
+import functools
+
 
 # Initialize Groq client with API key from environment or Streamlit secrets
 try:
@@ -17,40 +19,10 @@ except KeyError:
 # Default language to Indonesian
 wikipedia.set_lang("id")
 
-def switch_wikipedia_language(language: str = "id"):
-    """
-    Switch Wikipedia language and return current language setting.
-    
-    Args:
-        language (str, optional): Language code to switch to. Defaults to "id".
-    
-    Returns:
-        str: Current language code
-    """
-    try:
-        # Validate language input
-        valid_languages = ["id", "en", "ms", "ar", "zh", "ja", "es", "fr", "ru"]
-        if language.lower() not in valid_languages:
-            st.warning(f"Invalid language. Defaulting to Indonesian. Choose from {valid_languages}")
-            language = "id"
-        
-        # Set the language globally
-        wikipedia.set_lang(language.lower())
-        
-        # Update session state
-        st.session_state['current_wiki_language'] = language.lower()
-        
-        return language.lower()
-    except Exception as e:
-        st.error(f"Error switching Wikipedia language: {e}")
-        return "id"
-
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 def try_groq_extraction(text: str) -> List[str]:
     """Attempt to extract keywords using Groq with retry logic"""
     try:
-        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-        
         prompt = f"""Extract key entities and search terms from the following text:
 
         Guidelines:
@@ -59,7 +31,7 @@ def try_groq_extraction(text: str) -> List[str]:
         3. Prioritize complete, precise terms
         4. Avoid generic or common words
         5. Consider context and significance
-        6. Correct typos and grammatical errors to ensure accuracy and clarity based on the Wikipedia page
+        6. Correct typos and grammatical errors to ensure accuracy and clarity
 
         Text: {text}
 
@@ -114,8 +86,28 @@ def extract_keywords(text: str) -> List[str]:
         
     return keywords
 
+def switch_wikipedia_language(language: str = "id"):
+    """Switch Wikipedia language and return current language setting."""
+    try:
+        # Validate language input
+        valid_languages = ["id", "en", "ms", "ar", "zh", "ja", "es", "fr", "ru"]
+        if language.lower() not in valid_languages:
+            st.warning(f"Invalid language. Defaulting to Indonesian. Choose from {valid_languages}")
+            language = "id"
+        
+        # Set the language globally
+        wikipedia.set_lang(language.lower())
+        
+        # Update session state
+        st.session_state['current_wiki_language'] = language.lower()
+        
+        return language.lower()
+    except Exception as e:
+        st.error(f"Error switching Wikipedia language: {e}")
+        return "id"
+
 def find_best_wikipedia_page(keywords: List[str]) -> Dict:
-    """Find the most relevant Wikipedia page based on keywords, respecting current language."""
+    """Find the most relevant Wikipedia pages based on keywords."""
     # Get current language from session state
     current_language = st.session_state.get('current_wiki_language', 'id')
     
@@ -237,8 +229,40 @@ Respond in JSON format:
             "source_url": wiki_content['url']
         }
 
-def highlight_text(text: str, claims_data: Dict) -> str:
-    """Highlight text based on claim verification results."""
+def correct_typos(text: str) -> str:
+    """Correct typos in the input text using Groq."""
+    try:
+        prompt = f"""Correct any spelling and grammatical errors in the following text while preserving its meaning:
+
+Text: {text}
+
+Rules:
+1. Maintain the original meaning
+2. Fix spelling errors
+3. Correct grammar mistakes
+4. Keep proper nouns unchanged
+5. Return the corrected text only
+
+Return JSON format:
+{{
+    "corrected_text": "The corrected version of the text"
+}}"""
+
+        response = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.3-70b-versatile",
+            response_format={"type": "json_object"},
+            temperature=0.2
+        )
+        
+        result = json.loads(response.choices[0].message.content)
+        return result.get('corrected_text', text)
+    except Exception as e:
+        st.warning(f"Error correcting typos: {str(e)}")
+        return text
+
+def highlight_text_with_tooltips(text: str, claims_data: Dict) -> str:
+    """Highlight text with tooltips showing verification status and justification."""
     highlighted_text = text
     
     colors = {
@@ -248,7 +272,6 @@ def highlight_text(text: str, claims_data: Dict) -> str:
     }
     
     if claims_data and 'claims' in claims_data:
-        # Sort claims by length (longest first) to avoid nested highlighting
         sorted_claims = sorted(claims_data['claims'], 
                              key=lambda x: len(x.get('claim', '')), 
                              reverse=True)
@@ -257,44 +280,18 @@ def highlight_text(text: str, claims_data: Dict) -> str:
             claim_text = claim_info.get('claim', '')
             if claim_text:
                 verification_status = claim_info.get('status', 'subjective')
+                justification = claim_info.get('justification', '')
                 color = colors.get(verification_status, colors['subjective'])
                 
                 # Escape HTML special characters
                 escaped_claim = escape(claim_text)
-                highlighted_html = f'<span style="background-color: {color};">{escaped_claim}</span>'
+                tooltip_text = f"{verification_status.upper()}: {justification}"
+                highlighted_html = f'<span style="background-color: {color};" title="{escape(tooltip_text)}">{escaped_claim}</span>'
                 
                 # Replace the claim text with highlighted version
                 highlighted_text = highlighted_text.replace(claim_text, highlighted_html)
     
     return highlighted_text
-
-def switch_wikipedia_language(language: str = "id"):
-    """
-    Switch Wikipedia language and return current language setting.
-    
-    Args:
-        language (str, optional): Language code to switch to. Defaults to "id".
-    
-    Returns:
-        str: Current language code
-    """
-    try:
-        # Validate language input
-        valid_languages = ["id", "en", "ms", "ar", "zh", "ja", "es", "fr", "ru"]
-        if language.lower() not in valid_languages:
-            st.warning(f"Invalid language. Defaulting to Indonesian. Choose from {valid_languages}")
-            language = "id"
-        
-        # Set the language globally
-        wikipedia.set_lang(language.lower())
-        
-        # Update session state
-        st.session_state['current_wiki_language'] = language.lower()
-        
-        return language.lower()
-    except Exception as e:
-        st.error(f"Error switching Wikipedia language: {e}")
-        return "id"
 
 def main():
     # Streamlit UI Configuration
@@ -365,34 +362,6 @@ def main():
                 type="primary"
             )
 
-            # After fact checking, show the highlighted text in the input column
-            if fact_check_clicked and input_text:
-                with st.spinner("Processing text..."):
-                    # Correct typos first
-                    corrected_text = correct_typos(input_text)
-                    if corrected_text != input_text:
-                        st.info("Text has been corrected for typos")
-                        input_text = corrected_text
-                    
-                    keywords = extract_keywords(input_text)
-                    wiki_content = find_best_wikipedia_page(keywords)
-                    claims_data = extract_claims(input_text)
-                    
-                    if claims_data and claims_data.get('claims', []):
-                        # Process claims and update status
-                        for claim_info in claims_data['claims']:
-                            result = verify_claim(claim_info['claim'], wiki_content)
-                            claim_info['status'] = result['status']
-                            claim_info['justification'] = result['justification']
-                        
-                        # Show highlighted text with tooltips
-                        st.markdown("### Highlighted Text with Verification")
-                        highlighted_text = highlight_text_with_tooltips(input_text, claims_data)
-                        st.markdown(
-                            f'<div class="highlighted-text">{highlighted_text}</div>',
-                            unsafe_allow_html=True
-                        )
-
     with col2:
         with st.expander("Fact Check Results", expanded=True):
             if fact_check_clicked and input_text:
@@ -400,11 +369,26 @@ def main():
                     st.error("Text exceeds 40,000 word limit. Please shorten your text.")
                     st.stop()
 
-                with st.spinner("Analyzing claims..."):
+                with st.spinner("Processing text..."):
+                    # Correct typos first
+                    corrected_text = correct_typos(input_text)
+                    if corrected_text != input_text:
+                        st.info("Text has been corrected for typos")
+                        input_text = corrected_text
+                    
+                    # Extract keywords
+                    keywords = extract_keywords(input_text)
+                    
+                    # Find Wikipedia page
+                    wiki_content = find_best_wikipedia_page(keywords)
+                    
                     if not wiki_content:
                         st.warning("Could not find a relevant Wikipedia page.")
                         st.stop()
 
+                    # Extract claims
+                    claims_data = extract_claims(input_text)
+                    
                     if claims_data and claims_data.get('claims', []):
                         accurate_claims = 0
                         total_claims = len(claims_data['claims'])
