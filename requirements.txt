@@ -7,3 +7,4 @@ spacy
 requests
 tenacity
 pillow
+google-generativeai
