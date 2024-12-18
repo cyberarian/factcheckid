@@ -293,12 +293,11 @@ def highlight_text_with_tooltips(text: str, claims_data: Dict) -> str:
     
     return highlighted_text
 
-def main():
+def fact_checker_main():
     # Streamlit UI Configuration
-    st.set_page_config(page_title="Fact Checker ID", page_icon="📋", layout="wide")
     
     # Title at the very top
-    st.markdown("<h1 style='text-align: center;'>FactChecker_ID 🕵️‍♀️</h1>", unsafe_allow_html=True)
+    # st.markdown("<h1 style='text-align: center;'>FactChecker_ID 🕵️‍♀️</h1>", unsafe_allow_html=True)
 
     # Initialize current language in session state if not already set
     if 'current_wiki_language' not in st.session_state:
