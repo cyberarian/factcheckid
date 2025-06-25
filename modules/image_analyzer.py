@@ -141,8 +141,8 @@ def image_analyzer_main():
     
     # Model selection dropdown
     model_options = {
-        "Groq Llama 3.2 11B Vision": "llama-3.2-11b-vision-preview",
-        "Groq Llama 3.2 90B Vision": "llama-3.2-90b-vision-preview",
+        "meta-llama/llama-4-maverick-17b-128e-instruct": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "meta-llama/llama-4-scout-17b-16e-instruct": "meta-llama/llama-4-scout-17b-16e-instruct",
         "Google Gemini Flash": "gemini-2.0-flash-exp"
     }
     
