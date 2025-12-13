@@ -17,7 +17,7 @@ def analyze_image_with_vision(image_file):
     # Your Groq API call for vision analysis
     try:
         response = client.chat.completions.create(
-            model="llama-3.2-90b-vision-preview",
+            model="meta-llama/llama-4-maverick-17b-128e-instruct",
             messages=[
                 {
                     "role": "user",
