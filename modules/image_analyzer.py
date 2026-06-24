@@ -92,7 +92,7 @@ def analyze_image_gemini(image_file):
         }
         
         model = genai.GenerativeModel(
-            model_name="models/gemini-3-pro-preview",
+            model_name="models/gemini-3.1-flash-lite",
             generation_config=generation_config,
         )
         
@@ -143,7 +143,7 @@ def image_analyzer_main():
     model_options = {
         "meta-llama/llama-4-maverick-17b-128e-instruct": "meta-llama/llama-4-maverick-17b-128e-instruct",
         "meta-llama/llama-4-scout-17b-16e-instruct": "meta-llama/llama-4-scout-17b-16e-instruct",
-        "Google Gemini Flash": "models/gemini-3-pro-preview"
+        "Google Gemini Flash": "gemini-3.1-flash-lite"
     }
     
     selected_model = st.selectbox(
