@@ -24,7 +24,7 @@ def analyze_image_groq(image_file, model_name):
         
         prompt = """Analyze this image and provide:
         1. A detailed description
-        2. Key objects and elements identified
+        2. Key objects and elements identified with metadata
         3. Any text visible in the image
         4. Notable features or patterns
         5. Potential context or setting
